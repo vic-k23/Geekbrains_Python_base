@@ -8,11 +8,6 @@
 # сумме и после этого завершить программу.
 
 def my_sum(*args):
-    """
-    Функция считает сумму последовательности целых чисел
-    :param args: список чисел
-    :return: сумма
-    """
     s = 0
     for n in args:
         try:
@@ -25,7 +20,7 @@ def my_sum(*args):
 # summa = 0
 row = ''
 while True:
-    row = " %s %s " % (row, input(f"Введите числа через пробел (s - завершить): {row}"))
+    row = input(f"Введите числа через пробел: {row}")
     print(f"Сумма: {my_sum(*row.split())}")
     if row.find("s") >= 0:
         break

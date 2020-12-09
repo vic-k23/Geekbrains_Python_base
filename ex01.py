@@ -3,12 +3,6 @@
 # Числа запрашивать у пользователя, предусмотреть обработку ситуации деления на ноль.
 
 def division(dividend, divider):
-    """
-    Функция принимает два параметра и возвращает частное от первого параметра на второй
-    :param dividend: Делимое
-    :param divider: Делител
-    :return: Частное
-    """
     try:
         return float(dividend) / float(divider)
     except ValueError:

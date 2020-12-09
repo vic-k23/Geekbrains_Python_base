@@ -3,9 +3,6 @@
 # и возвращает сумму наибольших двух аргументов.
 
 def sum_of_max(op1, op2, op3):
-    """
-    Функция возвращает сумму двух больших из трёх предложенных параметров
-    """
     return op2 + op3 if op1 < op2 and op1 < op3 else (op1 + op3 if op2 < op3 and op2 < op1 else op2 + op1)
 
 
