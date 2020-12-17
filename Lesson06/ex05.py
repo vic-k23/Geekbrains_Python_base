@@ -13,16 +13,19 @@ class Stationery:
 
 
 class Pen(Stationery):
+    # Переопределяем метод родителя
     def draw(self):
         print("Так пишет ручка")
 
 
 class Pencil(Stationery):
+    # Переопределяем метод родителя
     def draw(self):
         print("Так пишет карандаш")
 
 
 class Handle(Stationery):
+    # Переопределяем метод родителя
     def draw(self):
         print("Так пишет маркер")
 

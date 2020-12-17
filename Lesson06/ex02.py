@@ -25,4 +25,4 @@ class Road:
 
 
 road = Road(20, 5000)
-print(road.asphalt_weight(0.025, 0.05))
+print(f"road.asphalt_weight(0.025, 0.05) т")

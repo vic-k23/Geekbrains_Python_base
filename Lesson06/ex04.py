@@ -69,8 +69,13 @@ sc.go()
 sc.speed = 180
 print(sc.show_speed())
 print(sc.color)
+
 pc.go()
 pc.speed = 150
 pc.turn("право")
+
 tc.speed = 65
 print(tc.show_speed())
+
+wc.speed = 65
+print(wc.show_speed())
