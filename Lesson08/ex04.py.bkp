@@ -1,0 +1,319 @@
+# Задача №4+5+6
+# Начните работу над проектом «Склад оргтехники». Создайте класс, описывающий склад. А также класс «Оргтехника»,
+# который будет базовым для классов-наследников. Эти классы — конкретные типы оргтехники (принтер, сканер, копир).
+# В базовом классе определить параметры, общие для приведенных типов. В классах-наследниках реализовать параметры,
+# уникальные для каждого типа оргтехники.
+# Разработать методы, отвечающие за приём оргтехники на склад и передачу в определенное подразделение компании.
+# Для хранения данных о наименовании и количестве единиц оргтехники, а также других данных, можно использовать
+# любую подходящую структуру, например словарь. Реализуйте механизм валидации вводимых пользователем данных.
+# Например, для указания количества принтеров, отправленных на склад, нельзя использовать строковый тип данных.
+from abc import ABC, abstractmethod
+from math import ceil
+from time import sleep
+
+
+class NotEnoughSpace(Exception):
+    """
+    Исключение, выбрасываемое при недостаточном месте на стеллаже
+    """
+    def __init__(self, left=0, txt=None):
+        """
+        Инициализация возможна без параметров, тогда подразумевается, что места не осталось.
+        :param left: Можно указать, сколько места осталось
+        :param txt: Можно указать своё сообщение
+        """
+        if txt:
+            self.txt = txt
+        else:
+            self.txt = f"Недостаточно места на стеллаже! Осталось {left} мест."
+
+
+class Rack:
+    """
+    Класс стеллаж. Описывает стеллажи и работу с ними. Класс итерируемый по списку помещённых объектов.
+    """
+    def __init__(self, volume):
+        """
+        В инициализаторе задаём количество доступных мест на стеллаже.
+        :param volume: Целое число, обозначающее количество мест на стеллаже.
+        """
+        self.__volume = int(volume)
+        """Доступное место. При инициализации доступно всё имеющееся место на стеллаже."""
+        self.__available_space = int(self.__volume)
+        """Содержимое стеллажа. Список объектов типа Equipment (или, разумеется, его потомков)."""
+        self.__contents = []
+        """Словарь типов оборудования, помещённого когда-либо на этот стеллаж, с указанием количества."""
+        self.__equipment_types = {}
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.__contents)
+
+    @property
+    def get_volume(self):
+        """Свойство возвращает полную ёмкость стеллажа в колличестве мест."""
+        return self.__volume
+
+    @property
+    def available_space(self):
+        """Своство возвращает доступную ёмкость стеллажа в количестве мест."""
+        return self.__available_space
+
+    @property
+    def contents(self):
+        """Свойство возвращает список размещённого на стеллаже оборудования."""
+        return self.__contents
+
+    def take_place(self, equipment):
+        """
+        Функция размещает единицу оборудования на стеллаж, уменьшая при этом колличество доступных мест на единицу.
+        :param equipment: объект оборудования, размещаемый на стеллаж.
+        :return: В случае недостаточного места на стеллаже выбрасывает исключение NotEnoughSpace
+        """
+        if self.__available_space:
+            self.__available_space -= 1
+            self.__equipment_types[str(type(equipment))] += 1
+            self.__contents.append(equipment)
+        else:
+            raise NotEnoughSpace(self.__available_space)
+
+    def take_away(self, equipment: str):
+        pass
+
+    def count_equipment(self, eq_type: type):
+        result = 0
+        for eq in self.__contents:
+            if type(eq) == eq_type:
+                result += 1
+        return result
+
+
+class Stock:
+    """Класс Склад содержит объекты Стеллаж."""
+    def __init__(self, racks):
+        """
+        Инициализатор создаёт склад с заданным колличеством стеллажей
+        :param racks: Список объектов типа Rack. При передаче несписка выбрасывает исключение TypeError
+        """
+        if type(racks) != list:
+            raise TypeError(f"Требуется список, {type(racks)} передан.")
+        else:
+            self.__racks = racks
+        """Словарь типов оборудования, помещённого когда-либо на этот склад, с указанием количества."""
+        self.__equipment_types = {}
+
+    @property
+    def available_space(self):
+        """Свойство возвращает доступное место на складе в колличестве мест на стеллажах"""
+        result = 0
+        for rack in self.__racks:
+            result += rack.available_space
+        return result
+
+    def push_equipment(self, equipment, count=1):
+        """
+        Функция размещает оборудование на первый же стеллаж склада, имеющий доступное место для размещения.
+        :param count: Количество помещаемой техники
+        :param equipment: Оборудование, размещаемое на стеллаж
+        :return: None
+        """
+        while count > 0:
+            for rack in self.__racks:
+                if rack.available_space:
+                    rack.take_place(equipment)
+                    self.__equipment_types[str(type(equipment))] += 1
+                    break
+            count -= 1
+
+    def count_equipment(self, equipment_type: type):
+        """
+        Вычисляет количество техники определённого в параметре типа
+        :param equipment_type: Тип оргтехники - Printer, Scanner, Copier
+        :return: Возвращает количество оргтехники запрошенного типа на всём складе
+        """
+        return self.__equipment_types[str(type(equipment_type))]
+
+    def pop_equipment(self, equipment: str, count=1):
+        """
+        Выдать со склада технику.
+        :param count: количество выдаваемой техники
+        :param equipment: строковое представление класса требуемой оргтехники
+        :return: объект оргтехники требуемого типа
+        """
+        for rack in self.__racks:
+            for eq in rack.contents:
+                if str(eq) == equipment and self.__equipment_types[str(type(eq))] >= count:
+                    rack.take_away(eq)
+                    self.__equipment_types[str(type(eq))] -= count
+                    return eq
+
+
+class Equipment(ABC):
+    """Базовый класс для оргтехники"""
+
+    @staticmethod
+    @abstractmethod
+    def stringify_me(manufacturer, color, model, performance, interfaces):
+        """Метод должен реализовывать тот же функционал, что и __str__"""
+        pass
+
+    def __init__(self, manufacturer: str, color: str, model: str, performance: float, interfaces: list):
+        """
+        Initializer
+        :param manufacturer: manufacturer of a printer manufacturer
+        :param color: Color of the printer
+        :param model: Model of the printer
+        :param performance: performance in pages per minute
+        :param interfaces: available interfaces for connection
+        """
+        self.__manufacturer = str(manufacturer)
+        self.__color = str(color)
+        self.__model = str(model)
+        self.__performance = float(performance)
+        self.__interfaces = list(interfaces)
+
+    @property
+    def manufacturer(self):
+        """Returns the manufacturer of an equipment"""
+        return self.__manufacturer
+
+    @property
+    def color(self):
+        """Returns the color of an equipment"""
+        return self.__color
+
+    @property
+    def model(self):
+        """Returns the model of an equipment"""
+        return self.__model
+
+    @property
+    def performance(self):
+        """Returns the performance of an equipment"""
+        return self.__performance
+
+    @property
+    def interfaces(self):
+        """Returns the performance of an equipment"""
+        return self.__performance
+
+
+class Printer(Equipment):
+    """Class Printer describes printer"""
+    @staticmethod
+    def stringify_me(manufacturer, color, model, performance, interfaces):
+        """
+        Используется для создания строкового предтавления экземпляра класса без создания самого экземпляра.
+        Применяется для запроса техники со склада
+        :param manufacturer: manufacturer of a printer manufacturer
+        :param color: Color of the printer
+        :param model: Model of the printer
+        :param performance: performance in pages per minute
+        :param interfaces: available interfaces for connection
+        :return: Строковое представления экземпляра класса
+        """
+        return f"Printer {manufacturer}/{model}/{performance}ppm/{interfaces}/{color}"
+
+    def __init__(self, manufacturer, color, model, performance, interfaces):
+        super().__init__(manufacturer, color, model, performance, interfaces)
+        self.__paper_storage = 0
+
+    def __str__(self):
+        return f"Printer {self.manufacturer}/{self.model}/{self.performance}ppm/{self.interfaces}/{self.color}"
+
+    def put_paper(self, pages_count):
+        """Функция добавляет бумагу в принтер"""
+        self.__paper_storage += pages_count
+
+    def print(self, pages_count, duplex):
+        """
+        Функция печати
+        :param pages_count: Количество печатаемых страниц
+        :param duplex: Флаг двусторонней печати (нужен для подсчёта использованных страниц)
+        :return: None
+        """
+        if (not duplex and self.__paper_storage < pages_count) or (duplex and self.__paper_storage < pages_count / 2):
+            print("Not enough paper!")
+        else:
+            self.__paper_storage -= ceil(pages_count / 2) if duplex else pages_count
+            print("Printing...")
+            sleep(pages_count / self.__performance * 60)
+            print("Finished successfully!")
+
+
+class Scanner(Equipment):
+    """
+    Класс Сканер
+    """
+
+    @staticmethod
+    def stringify_me(manufacturer, color, model, performance, interfaces):
+        """
+        Используется для создания строкового предтавления экземпляра класса без создания самого экземпляра.
+        Применяется для запроса техники со склада
+        :param manufacturer: manufacturer of a Scanner
+        :param color: Color of the Scanner
+        :param model: Model of the Scanner
+        :param performance: performance in pages per minute
+        :param interfaces: available interfaces for connection
+        :return: Строковое представления экземпляра класса
+        """
+        return f"Scanner {manufacturer}/{model}/{performance}ppm/{interfaces}/{color}"
+
+    def __init__(self, manufacturer, color, model, performance, interfaces):
+        super().__init__(manufacturer, color, model, performance, interfaces)
+
+    def __str__(self):
+        return f"Scanner {self.manufacturer}/{self.model}/{self.performance}ppm/{self.interfaces}/{self.color}"
+
+    def scan(self, pages_count):
+        """
+        Функция сканирования
+        :param pages_count: Количество сканируемых странци (нужно для подсчёта задержки при иммитации действия)
+        :return: None
+        """
+        print("Scanning...")
+        sleep(pages_count / self.__performance * 60)
+        print("Saving result...")
+        sleep(3)
+        print("Finished successfully!")
+
+
+class Copier(Printer, Scanner):
+    """Класс Копир"""
+
+    @staticmethod
+    def stringify_me(manufacturer, color, model, performance, interfaces):
+        """
+        Используется для создания строкового предтавления экземпляра класса без создания самого экземпляра.
+        Применяется для запроса техники со склада
+        :param manufacturer: manufacturer of a Copier
+        :param color: Color of the Copier
+        :param model: Model of the Copier
+        :param performance: performance in pages per minute
+        :param interfaces: available interfaces for connection
+        :return: Строковое представления экземпляра класса
+        """
+        return f"Copier {manufacturer}/{model}/{performance}ppm/{interfaces}/{color}"
+
+    def __init__(self, manufacturer, color, model, performance, interfaces):
+        super().__init__(manufacturer, color, model, performance, interfaces)
+
+    def __str__(self):
+        return f"Copier {self.manufacturer}/{self.model}/{self.performance}ppm/{self.interfaces}/{self.color}"
+
+    def copy(self, pages_count):
+        """
+        Функция копирования
+        :param pages_count: Количество страниц
+        :return: None
+        """
+        super().scan(pages_count)
+        super().print(pages_count)
+
+
+rack10 = Rack(10)
+stock1 = Stock([rack10])
+printer1 = Printer("Hewlett Packard", "black", "LaserJet P1000", 20, ["USB"])
