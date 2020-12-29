@@ -29,10 +29,13 @@ class Stock:
         :param equipment: Оборудование, размещаемое на склад
         :return: None
         """
-        if str(equipment) in self.__equipment.keys():
-            self.__equipment[str(equipment)] += count
-        else:
-            self.__equipment[str(equipment)] = count
+        try:
+            if str(equipment) in self.__equipment.keys():
+                self.__equipment[str(equipment)] += count
+            else:
+                self.__equipment[str(equipment)] = count
+        except TypeError as t_err:
+            print(t_err.args[0])
 
     def count_equipment(self, equipment: str):
         """
@@ -56,24 +59,28 @@ class Stock:
                 либо кортеж с сообщением о недостаточном количестве с указанием недостающего количества
                 либо кортеж (None, 0), если такой техники нет на складе
         """
-        if equipment in self.__equipment.keys():
-            if self.__equipment[equipment] >= count:
-                self.__equipment[equipment] -= count
-                cls_name = equipment[:equipment.find(' ')]
-                params = equipment[equipment.find(' ') + 1:]
-                manufacturer, model, performance, interfaces, color = params.split('/')
-                interfaces = findall("[A-Za-z]+", interfaces)
-                if cls_name == "Printer":
-                    return Printer(manufacturer, model, performance, interfaces, color), count
-                elif cls_name == "Scanner":
-                    return Scanner(manufacturer, model, performance, interfaces, color), count
-                elif cls_name == "Copier":
-                    return Copier(manufacturer, model, performance, interfaces, color), count
+        try:
+            if equipment in self.__equipment.keys():
+                if self.__equipment[equipment] >= count:
+                    self.__equipment[equipment] -= count
+                    cls_name = equipment[:equipment.find(' ')]
+                    params = equipment[equipment.find(' ') + 1:]
+                    manufacturer, model, performance, interfaces, color = params.split('/')
+                    interfaces = findall("[A-Za-z]+", interfaces)
+                    if cls_name == "Printer":
+                        return Printer(manufacturer, model, performance, interfaces, color), count
+                    elif cls_name == "Scanner":
+                        return Scanner(manufacturer, model, performance, interfaces, color), count
+                    elif cls_name == "Copier":
+                        return Copier(manufacturer, model, performance, interfaces, color), count
+                    else:
+                        return ()
                 else:
-                    return ()
+                    return f"Не хватает {count - self.__equipment[equipment]} единиц", self.__equipment[equipment] - count
             else:
-                return f"Не хватает {count - self.__equipment[equipment]} единиц", self.__equipment[equipment] - count
-        else:
+                return None, 0
+        except TypeError as t_err:
+            print("Ошибка типа данных!" + t_err)
             return None, 0
 
     def equipment_list(self):
@@ -101,8 +108,16 @@ class Equipment(ABC):
         self.__manufacturer = str(manufacturer)
         self.__color = str(color)
         self.__model = str(model)
-        self.__performance = float(performance)
-        self.__interfaces = list(interfaces)
+        if type(performance) != float:
+            print("Неправильный тип данных для perfomance!")
+            self.__performance = 0.0
+        else:
+            self.__performance = float(performance)
+        if type(interfaces) != list:
+            print("Неправильный тип данных для interfaces!")
+            self.__interfaces = ['USB']
+        else:
+            self.__interfaces = list(interfaces)
 
     @property
     def manufacturer(self):
@@ -191,9 +206,6 @@ class Scanner(Equipment):
         :return: Строковое представления экземпляра класса
         """
         return f"Scanner {manufacturer}/{model}/{float(performance)}/{interfaces}/{color}"
-
-    def __init__(self, manufacturer, model, performance, interfaces, color):
-        super().__init__(manufacturer, model, performance, interfaces, color)
 
     def __str__(self):
         return f"Scanner {self.manufacturer}/{self.model}/{self.performance}/{self.interfaces}/{self.color}"
